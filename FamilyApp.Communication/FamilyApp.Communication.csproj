@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MailKit" Version="4.8.0" />
+		<PackageReference Include="Mapster" Version="7.4.0" />
+		<PackageReference Include="Mapster.EFCore" Version="5.1.1" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\FamilyApp.Common\FamilyApp.Common.csproj" />
+	</ItemGroup>
+</Project>
