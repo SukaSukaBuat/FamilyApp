@@ -41,7 +41,7 @@ namespace FamilyApp.Auth.Services
             var userExist = await userManager.FindByEmailAsync(signUp.Email);
             if (userExist != null)
             {
-                throw new RecordAlreadyExistException("Emel telah wujud.");
+                throw new RecordAlreadyExistException("AKaun telah wujud.");
             }
             var toSave = signUp.Adapt<TblUser>();
 
@@ -73,7 +73,7 @@ namespace FamilyApp.Auth.Services
 
         public async Task ConfirmEmailAsync(string email, string emailConfirmToken)
         {
-            var user = await userManager.FindByEmailAsync(email) ?? throw new RecordNotFoundException("Emel tidak dijumpai.");
+            var user = await userManager.FindByEmailAsync(email) ?? throw new RecordNotFoundException("Akaun tidak dijumpai.");
             var result = await userManager.ConfirmEmailAsync(user, emailConfirmToken);
             if (!result.Succeeded)
             {
@@ -83,7 +83,7 @@ namespace FamilyApp.Auth.Services
 
         public async Task ConfirmUserAsync(string email)
         {
-            var user = await userManager.FindByEmailAsync(email) ?? throw new RecordNotFoundException("Emel tidak dijumpai.");
+            var user = await userManager.FindByEmailAsync(email) ?? throw new RecordNotFoundException("Akaun tidak dijumpai.");
             if (!user.EmailConfirmed) {
                 throw new EmailNotConfirmedException();
             }
@@ -169,7 +169,7 @@ namespace FamilyApp.Auth.Services
             }
             if (!isOuth)
             {
-                if(user.OuthProvider != OuthProvider.None)
+                if (user.OuthProvider != OuthProvider.None)
                 {
                     throw new BadRequestException("Emel ini telah didaftarkan dengan kaedah lain.");
                 }
@@ -179,44 +179,58 @@ namespace FamilyApp.Auth.Services
                     throw new EmailOrPasswordNotValidException();
                 }
             }
-                var userRoles = await userManager.GetRolesAsync(user);
-                var session = new TblLoginSession
+            var userRoles = await userManager.GetRolesAsync(user);
+            var session = new TblLoginSession
+            {
+                UserId = user.Id,
+            };
+            genericRepository.Add(session);
+            await genericRepository.SaveChangesAsync();
+            var authClaims = new List<Claim>
                 {
-                    UserId = user.Id,
+                    new(JwtTokenClaim.Email, user.Email),
+                    new(JwtTokenClaim.UserId, user.Id.ToString()),
+                    new(JwtTokenClaim.SessionId, session.Id.ToString()),
+                    new(JwtTokenClaim.OuthProvider, user.OuthProvider.ToString()),
                 };
-                var authClaims = new List<Claim>
-                {
-                    new(ClaimTypes.Email, user.Email),
-                    new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new("session_id", session.Id.ToString())
-                };
-                foreach (var userRole in userRoles)
-                {
-                    authClaims.Add(new(ClaimTypes.Role, userRole));
-                }
-                var token = GetToken(authClaims);
-                return new SuccessLoginDto(new JwtSecurityTokenHandler().WriteToken(token), token.ValidTo);
+            foreach (var userRole in userRoles)
+            {
+                authClaims.Add(new(ClaimTypes.Role, userRole));
+            }
+            var token = GetToken(authClaims);
+            return new SuccessLoginDto(new JwtSecurityTokenHandler().WriteToken(token), token.ValidTo);
         }
         public async Task ResetPasswordRequestAsync(string email)
         {
-            var user = await userManager.FindByEmailAsync(email) ?? throw new RecordNotFoundException("Emel tidak dijumpai.");
+            var user = await userManager.FindByEmailAsync(email) ?? throw new RecordNotFoundException("Akaun tidak dijumpai.");
+            if (!user.EmailConfirmed)
+            {
+                throw new EmailNotConfirmedException();
+            }
+            if (!user.UserConfirmed)
+            {
+                throw new AccountNotConfirmedException();
+            }
+            if(user.OuthProvider != OuthProvider.None)
+            {
+                throw new BadRequestException("Akaun ini tidak boleh ditetap semula kata laluan.");
+            }
             var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
             var queryParams = new Dictionary<string, string>
             {
                 { "token", resetToken },
                 { "email", user.Email }
             };
-            var resetUrl = QueryHelpers.AddQueryString($"{configuration["FEHost"]}/auth/reset-password", queryParams!);
+            var resetUrl = QueryHelpers.AddQueryString($"{configuration["FEHost"]}/reset-password", queryParams!);
             await emailService.SendEmailAsync(user.Email, "Tetapan semula kata laluan", $"Sila klik pada pautan ini untuk menetapkan semula kata laluan anda: <a href='{resetUrl}'>here</a>.");
         }
         public async Task ResetPasswordAsync(ResetPasswordDto resetPassword)
         {
-            var user = await userManager.FindByEmailAsync(resetPassword.Email) ?? throw new RecordNotFoundException("Emel tidak dijumpai.");
+            var user = await userManager.FindByEmailAsync(resetPassword.Email) ?? throw new RecordNotFoundException("AKaun tidak dijumpai.");
             var result = await userManager.ResetPasswordAsync(user, resetPassword.Token, resetPassword.Password);
             if (!result.Succeeded)
             {
-                throw new BadRequestException(result.Errors.Select(e => e.Description).ToString()!);
+                throw new BadRequestException("Tidak berjaya menetap semula kata laluan. Sila cuba semula");
             }
         }
 

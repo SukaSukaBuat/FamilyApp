@@ -64,7 +64,7 @@ namespace FamilyApp.Auth.Endpoints
                 return Results.Ok("Emel telah dihantar untuk anda menetap semula kata laluan.");
             });
 
-            group.MapPut("/reset-password", async ([FromServices] IAuthenticationService authenticationService, [FromBody] ResetPasswordDto resetPassword) =>
+            group.MapPost("/reset-password", async ([FromServices] IAuthenticationService authenticationService, [FromBody] ResetPasswordDto resetPassword) =>
             {
                 await authenticationService.ResetPasswordAsync(resetPassword);
                 return Results.Ok("Kata laluan telah berjaya ditetapkan semula. Sila log masuk semula menggunakan kata laluan baharu.");

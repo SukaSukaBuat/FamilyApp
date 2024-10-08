@@ -15,6 +15,7 @@ namespace FamilyApp.Common.Dtos
         [DataType(DataType.Password)]
         public string Password { get; set; } = null!;
         [Compare("Password")]
+        public string ConfirmPassword { get; set; } = null!;
         public string Token { get; set; } = null!;
     }
 }

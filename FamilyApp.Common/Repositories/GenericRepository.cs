@@ -1,5 +1,6 @@
 ﻿using FamilyApp.Common.Databases.FamilyDb;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,13 +12,17 @@ namespace FamilyApp.Common.Repositories
 {
     public interface IGenericRepository
     {
-        Task<int> SaveChanges(Guid? userId = null);
+        EntityEntry<TEntity> Add<TEntity>(TEntity entity) where TEntity : class;
+        Task<int> SaveChangesAsync(Guid? userId = null);
     }
 
     public class GenericRepository(FamilyDbContext context) : IGenericRepository
     {
-
-        public async Task<int> SaveChanges(Guid? userId = null)
+        public EntityEntry<TEntity> Add<TEntity>(TEntity entity) where TEntity : class
+        {
+            return context.Set<TEntity>().Add(entity);
+        }
+        public async Task<int> SaveChangesAsync(Guid? userId = null)
         {
             var entries = Enumerable.ToList(context.ChangeTracker.Entries());
             var jsonFormatting = new JsonSerializerOptions { WriteIndented = false };
